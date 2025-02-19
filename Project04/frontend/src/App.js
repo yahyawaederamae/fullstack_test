@@ -1,69 +1,156 @@
 import React, { useState, useEffect } from "react";
-import { Card, CardContent, Input } from "@mui/joy";
+import {
+  Button,
+  Card,
+  CardContent,
+  Input,
+  LinearProgress,
+  Table,
+} from "@mui/joy";
 import axios from "axios";
 import _ from "lodash";
+import { useForm, Controller } from "react-hook-form";
 
 import Footer from "./Components/Footer";
 import Topbar from "./Components/Topbar";
-import ControlCard from "./Components/ControlCard";
 
 function App() {
-  const titleArray = ["banking", "logistic", "e-commerce", "computer"];
   const [searchTerm, setSearchTerm] = useState("");
-  const [starWarPeople, setStarWarPeople] = useState([]);
+  const [users, setUsers] = useState([]);
+  const [isReady, setIsReady] = useState(false);
+  const { control, handleSubmit } = useForm();
 
-  useEffect(() => {
+  const handleCreateUser = (data) => {
+    console.log("data", data);
+    setIsReady(false);
     axios
-      .get("https://swapi.dev/api/people/")
+      .post(`${process.env.REACT_APP_API_URL}/user`, data)
       .then((res) => {
-        setStarWarPeople(res?.data?.results);
-        console.log("People ", res?.data?.results);
+        axios.get(`${process.env.REACT_APP_API_URL}/user`).then((res) => {
+          setUsers(res?.data?.rows);
+          setIsReady(true);
+        });
       })
       .catch((error) => {
         console.error("Error", error?.message);
       });
+  };
 
+  const getAllUser = () => {
+    setIsReady(false);
+    axios
+      .get(`${process.env.REACT_APP_API_URL}/user`)
+      .then((res) => {
+        setUsers(res?.data?.rows);
+        setIsReady(true);
+        console.log("User ", res?.data?.rows);
+      })
+      .catch((error) => {
+        console.error("Error", error?.message);
+      });
+  };
+
+  useEffect(() => {
+    getAllUser();
     return () => {};
   }, []);
+
+  const handleDeleteUser = (userId) => {
+    axios
+      .delete(`${process.env.REACT_APP_API_URL}/user/${userId}`)
+      .then((res) => {
+        getAllUser();
+      })
+      .catch((error) => {
+        alert(error?.message);
+        console.error("Error", error?.message);
+      });
+  };
+
+  if (!isReady) {
+    return (
+      <div>
+        <LinearProgress />
+      </div>
+    );
+  }
 
   return (
     <div>
       <Topbar appTitle='IARC Devboard' />{" "}
-      <div className='container'>
-        <Card>
-          <CardContent>
-            <div>Search Box</div>
-            <Input
-              placeholder='Input Some Search Word'
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-            <div>
-              You Search <span className='text-blue-500'>{searchTerm}</span>
-            </div>
-          </CardContent>
-        </Card>
-
-        <div className='text-xl mx-4 my-2'>People in Starwar</div>
-        <div className='mx-4'>
-          {_.map(starWarPeople, (eachPeople, index) => (
-            <Card key={index} className='my-2'>
+      <div className='min-h-screen'>
+        <div className='flex justify-center  flex-wrap'>
+          <div className='lg:w-3/4 '>
+            <div className='my-1 font-semibold text-lg'>เพิ่มพนักงานใหม่</div>
+            <Card>
               <CardContent>
-                <div className='flex'>
-                  <div className='w-1/3'></div>
-                  <div className='w-2/3'>
-                    <li>Name: {eachPeople?.name}</li>
-                    <li>Height: {eachPeople?.height}</li>
-                    <li>Mass: {eachPeople?.mass}</li>
+                <form onSubmit={handleSubmit(handleCreateUser)}>
+                  <div>ชื่อ</div>
+                  <Controller
+                    name='name'
+                    control={control}
+                    render={({ field }) => (
+                      <Input {...field} placeholder='ชื่อพนักงาน' />
+                    )}
+                  />
+                  <div>แผนก</div>
+                  <Controller
+                    name='department'
+                    control={control}
+                    render={({ field }) => (
+                      <Input {...field} placeholder='แผนก' />
+                    )}
+                  />
+                  <div>
+                    <Button type='submit'>บันทึก</Button>
                   </div>
+                </form>
+              </CardContent>
+            </Card>
+          </div>
+          <div className='lg:w-3/4'>
+            <Card>
+              <CardContent>
+                <div>Search Box</div>
+                <Input
+                  placeholder='Input Some Search Word'
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+                <div>
+                  You Search <span className='text-blue-500'>{searchTerm}</span>
                 </div>
               </CardContent>
             </Card>
-          ))}
+            <div>
+              <h3 className='font-bold'>User List</h3>
+              <Table>
+                <thead>
+                  <tr>
+                    <th>ลำดับที่</th>
+                    <th>ชื่อ</th>
+                    <th>แผนก</th>
+                    <th>ดำเนินการ</th>
+                  </tr>
+                </thead>
+                {_.map(users, (eachUser, index) => (
+                  <tr>
+                    <td>{index + 1}</td>
+                    <td>{eachUser?.name}</td>
+                    <td>{eachUser?.department}</td>
+                    <td>
+                      <Button
+                        color='danger'
+                        onClick={() => handleDeleteUser(eachUser?._id)}
+                      >
+                        ลบ
+                      </Button>
+                    </td>
+                  </tr>
+                ))}
+              </Table>
+            </div>
+          </div>
         </div>
-
-        {titleArray.map((titleElement) => (
-          <ControlCard title={titleElement} />
-        ))}
       </div>
       <Footer />
     </div>

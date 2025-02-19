@@ -33,7 +33,7 @@ router.post("/", async (req, res) => {
   }
 });
 
-router.put("/user/:id", async (req, res) => {
+router.put("/:id", async (req, res) => {
   try {
     const updatedUser = await User.findOneAndUpdate(
       { id: parseInt(req.params.id) },
@@ -51,20 +51,14 @@ router.put("/user/:id", async (req, res) => {
   }
 });
 
-router.delete("/user/:id", async (req, res) => {
-  try {
-    const deletedUser = await User.findOneAndDelete({
-      id: parseInt(req.params.id),
-    });
-
-    if (!deletedUser) {
-      return res.status(404).json({ message: "User not found" });
+router.delete("/:id", async (req, res) => {
+    console.log("Delete Users");
+    try {
+      const result = await User.findByIdAndDelete(req?.params?.id);
+      res.status(204).json(result);
+    } catch (error) {
+      res.status(404).json({ err: error });
     }
-
-    res.json({ message: "User deleted successfully" });
-  } catch (error) {
-    res.status(500).json({ err: error });
-  }
-});
+  });
 
 module.exports = router;
