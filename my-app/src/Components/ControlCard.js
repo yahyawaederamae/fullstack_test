@@ -1,13 +1,14 @@
-import React from 'react'
+import React from "react";
+import { Button, Card, CardContent } from "@mui/joy";
 
 export default function ControlCard({ title }) {
   function startProgram() {
-    window.alert('Program ' + title + ' is Start')
+    window.alert("Program " + title + " is Start");
   }
 
   const restartProgram = (subtitle) => {
-    window.alert('Program ' + title + 'is Restart' + subtitle)
-  }
+    window.alert("Program " + title + "is Restart" + subtitle);
+  };
 
   const showData = () => {
     return (
@@ -15,23 +16,22 @@ export default function ControlCard({ title }) {
         <li>Hello</li>
         <li>World</li>
       </div>
-    )
-  }
+    );
+  };
 
   return (
-    <div className="m-4">
-      <h4>{title}</h4>
-      <button className="btn btn-success" onClick={() => startProgram()}>
-        Start
-      </button>
-      <button
-        className="btn btn-warning"
-        onClick={() => restartProgram('world')}
-      >
-        Restart
-      </button>
-      <button className="btn btn-danger">Down</button>
-      {showData()}
-    </div>
-  )
+    <Card className='m-4 rounded-md border'>
+      <CardContent>
+        <h4>{title}</h4>
+        <div className='flex gap-2'>
+          <Button onClick={() => startProgram()}>Start</Button>
+          <Button color='success' onClick={() => restartProgram("world")}>
+            Restart
+          </Button>
+          <Button color='danger'>Down</Button>
+        </div>
+        {showData()}
+      </CardContent>
+    </Card>
+  );
 }
