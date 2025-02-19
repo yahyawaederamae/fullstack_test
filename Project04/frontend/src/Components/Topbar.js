@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Home, UserRoundPlus, ShoppingCart, LogOut, Menu, X } from 'lucide-react';
+import { Home, UserRoundPlus, User, ShoppingCart, ListOrdered, LogOut, Menu, X } from 'lucide-react';
 import { Link } from "react-router-dom";
 
 const Topbar = () => {
@@ -12,8 +12,9 @@ const Topbar = () => {
   const menuItems = [
     { icon: <Home size={18} />, text: 'Home', path: '/' },
     { icon: <UserRoundPlus size={18} />, text: 'Create User', path: '/create' },
+    { icon: <User size={18} />, text: 'All User', path: '/users' },
     { icon: <ShoppingCart size={18} />, text: 'Store', path: '/store' },
-    { icon: <LogOut size={18} />, text: 'Log Out', path: '/logout', className: 'text-red-600 hover:text-red-700' }
+    { icon: <ListOrdered size={18} />, text: 'Orders', path: '/orders' },
   ];
 
   return (

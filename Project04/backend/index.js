@@ -2,6 +2,8 @@ const express = require("express");
 const mongoose = require("mongoose");
 
 const userRouter = require("./routes/user.routes");
+const orderRouter = require("./routes/order.routes"); 
+const productRouter = require("./routes/product.routes"); 
 
 const app = express();
 const port = 3001;
@@ -23,6 +25,8 @@ mongoose.connect(uri).then(
 );
 
 app.use("/api/user", userRouter);
+app.use("/api/order", orderRouter);
+app.use("/api/product", productRouter);
 
 app.listen(port, () => {
   console.log(`App listening on port ${port}`);
