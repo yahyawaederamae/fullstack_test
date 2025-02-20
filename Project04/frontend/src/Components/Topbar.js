@@ -13,7 +13,7 @@ const Topbar = () => {
     { icon: <Home size={18} />, text: 'Home', path: '/' },
     { icon: <UserRoundPlus size={18} />, text: 'Create User', path: '/create' },
     { icon: <User size={18} />, text: 'All User', path: '/users' },
-    { icon: <ShoppingCart size={18} />, text: 'Store', path: '/store' },
+    { icon: <ShoppingCart size={18} />, text: 'Cart', path: '/cart' },
     { icon: <ListOrdered size={18} />, text: 'Orders', path: '/orders' },
   ];
 

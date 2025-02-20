@@ -1,7 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useDispatch, useSelector } from 'react-redux';
+import { createOrder, selectOrdersStatus, selectOrdersError } from '../reduxs/slices/orderSlice';
 
 const Cart = () => {
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+  const orderStatus = useSelector(selectOrdersStatus);
+  const orderError = useSelector(selectOrdersError);
+
   const [cart, setCart] = useState([]);
   const [showOrderForm, setShowOrderForm] = useState(false);
   const [orderFormData, setOrderFormData] = useState({
@@ -9,7 +16,6 @@ const Cart = () => {
     phoneNumber: '',
     address: ''
   });
-  const navigate = useNavigate();
 
   useEffect(() => {
     const savedCart = JSON.parse(localStorage.getItem('cart') || '[]');
@@ -45,34 +51,25 @@ const Cart = () => {
 
   const handleOrderSubmit = async (e) => {
     e.preventDefault();
+    
+    const orderData = {
+      products: cart.map(item => ({
+        product: item.product._id,
+        quantity: item.quantity
+      })),
+      ...orderFormData,
+      totalAmount: calculateTotal()
+    };
+
     try {
-      const orderData = {
-        products: cart.map(item => ({
-          product: item.product._id,
-          quantity: item.quantity
-        })),
-        ...orderFormData,
-        totalAmount: calculateTotal()
-      };
-
-      const response = await fetch('http://localhost:3001/api/order', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(orderData)
-      });
-
-      if (!response.ok) throw new Error('Failed to create order');
-
+      await dispatch(createOrder(orderData)).unwrap();
       localStorage.removeItem('cart');
       setCart([]);
       setShowOrderForm(false);
       alert('สั่งซื้อสำเร็จ!');
       navigate('/orders');
     } catch (error) {
-      console.error('Error creating order:', error);
-      alert('เกิดข้อผิดพลาดในการสั่งซื้อ');
+      alert('เกิดข้อผิดพลาดในการสั่งซื้อ: ' + (error?.message || 'กรุณาลองใหม่อีกครั้ง'));
     }
   };
 
@@ -105,6 +102,7 @@ const Cart = () => {
                         <button
                           onClick={() => updateQuantity(item.product._id, -1)}
                           className="p-1 rounded-full hover:bg-gray-100"
+                          disabled={orderStatus === 'loading'}
                         >
                           -
                         </button>
@@ -112,6 +110,7 @@ const Cart = () => {
                         <button
                           onClick={() => updateQuantity(item.product._id, 1)}
                           className="p-1 rounded-full hover:bg-gray-100"
+                          disabled={orderStatus === 'loading'}
                         >
                           +
                         </button>
@@ -124,6 +123,7 @@ const Cart = () => {
                       <button
                         onClick={() => removeFromCart(item.product._id)}
                         className="text-red-600 hover:text-red-800 mx-auto block"
+                        disabled={orderStatus === 'loading'}
                       >
                         ลบ
                       </button>
@@ -140,7 +140,8 @@ const Cart = () => {
             </div>
             <button
               onClick={() => setShowOrderForm(true)}
-              className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700"
+              className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50"
+              disabled={orderStatus === 'loading'}
             >
               สั่งซื้อ
             </button>
@@ -150,6 +151,11 @@ const Cart = () => {
             <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
               <div className="bg-white p-6 rounded-lg w-full max-w-md">
                 <h2 className="text-xl font-bold mb-4">กรอกข้อมูลการสั่งซื้อ</h2>
+                {orderError && (
+                  <div className="mb-4 p-3 bg-red-50 text-red-700 rounded-md">
+                    {orderError}
+                  </div>
+                )}
                 <form onSubmit={handleOrderSubmit}>
                   <div className="space-y-4">
                     <div>
@@ -203,14 +209,16 @@ const Cart = () => {
                       type="button"
                       onClick={() => setShowOrderForm(false)}
                       className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+                      disabled={orderStatus === 'loading'}
                     >
                       ยกเลิก
                     </button>
                     <button
                       type="submit"
-                      className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                      className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
+                      disabled={orderStatus === 'loading'}
                     >
-                      ยืนยันการสั่งซื้อ
+                      {orderStatus === 'loading' ? 'กำลังดำเนินการ...' : 'ยืนยันการสั่งซื้อ'}
                     </button>
                   </div>
                 </form>

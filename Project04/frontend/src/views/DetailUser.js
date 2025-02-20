@@ -1,35 +1,58 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { useParams } from 'react-router';
-import { User, Building2, Mail, Phone } from 'lucide-react';
+import { useDispatch, useSelector } from 'react-redux';
+import { User, Building2, Mail, Phone, Loader2 } from 'lucide-react';
+import { 
+  fetchUserById, 
+  selectSelectedUser, 
+  selectUserStatus, 
+  selectUserError,
+  clearSelectedUser 
+} from '../reduxs/slices/userSlice';
 
 function DetailUser() {
   const params = useParams();
-  const [isReady, setIsReady] = useState(false);
-  const [data, setData] = useState({});
+  const dispatch = useDispatch();
+  
+  const user = useSelector(selectSelectedUser);
+  const status = useSelector(selectUserStatus);
+  const error = useSelector(selectUserError);
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const response = await fetch(`${process.env.REACT_APP_API_URL}/user/${params.id}`);
-        const userData = await response.json();
-        setData(userData);
-        setIsReady(true);
-      } catch (error) {
-        console.error('Error fetching user data:', error);
-      }
+    dispatch(fetchUserById(params.id));
+    
+    // Cleanup on unmount
+    return () => {
+      dispatch(clearSelectedUser());
     };
+  }, [dispatch, params.id]);
 
-    fetchData();
-    return () => {};
-  }, [params]);
-
-  if (!isReady) {
+  if (status === 'loading') {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="w-full max-w-md">
-          <div className="h-2 bg-gray-200 rounded">
-            <div className="w-3/4 h-full bg-blue-500 rounded animate-pulse"></div>
-          </div>
+      <div className="flex justify-center items-center min-h-screen">
+        <div className="flex items-center space-x-2">
+          <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
+          <span className="text-gray-600">กำลังโหลด...</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="max-w-2xl mx-auto bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
+          {error}
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="max-w-2xl mx-auto bg-yellow-50 border border-yellow-200 text-yellow-700 px-4 py-3 rounded">
+          ไม่พบข้อมูลผู้ใช้
         </div>
       </div>
     );
@@ -45,8 +68,8 @@ function DetailUser() {
               <User className="w-8 h-8 text-gray-500" />
             </div>
             <div>
-              <h2 className="text-2xl font-bold text-gray-900">{data.name}</h2>
-              <p className="text-gray-500">ID: {data.id || "Don't have ID"}</p>
+              <h2 className="text-2xl font-bold text-gray-900">{user.name}</h2>
+              <p className="text-gray-500">ID: {user.id || "Don't have ID"}</p>
             </div>
           </div>
         </div>
@@ -56,26 +79,26 @@ function DetailUser() {
           <div className="space-y-4">
             <div className="flex items-center space-x-3">
               <Building2 className="w-5 h-5 text-gray-400" />
-              <span className="text-gray-600">{data.department}</span>
+              <span className="text-gray-600">{user.department}</span>
             </div>
-            {data.email && (
+            {user.email && (
               <div className="flex items-center space-x-3">
                 <Mail className="w-5 h-5 text-gray-400" />
-                <span className="text-gray-600">{data.email}</span>
+                <span className="text-gray-600">{user.email}</span>
               </div>
             )}
-            {data.phone && (
+            {user.phone && (
               <div className="flex items-center space-x-3">
                 <Phone className="w-5 h-5 text-gray-400" />
-                <span className="text-gray-600">{data.phone}</span>
+                <span className="text-gray-600">{user.phone}</span>
               </div>
             )}
           </div>
 
-          {data.bio && (
+          {user.bio && (
             <div className="mt-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-2">About</h3>
-              <p className="text-gray-600">{data.bio}</p>
+              <p className="text-gray-600">{user.bio}</p>
             </div>
           )}
         </div>

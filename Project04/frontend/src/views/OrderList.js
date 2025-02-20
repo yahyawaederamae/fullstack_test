@@ -1,81 +1,54 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { 
+  fetchOrders, 
+  selectAllOrders, 
+  selectOrdersStatus,
+  selectOrdersError,
+  fetchOrderById,
+  clearSelectedOrder
+} from '../reduxs/slices/orderSlice';
+import OrderDetail from '../Components/OrderDetail';
+import { Loader2 } from 'lucide-react';
 
 const OrderList = () => {
-  const [orders, setOrders] = useState([]);
-  const [selectedOrder, setSelectedOrder] = useState(null);
+  const dispatch = useDispatch();
+  const orders = useSelector(selectAllOrders);
+  const status = useSelector(selectOrdersStatus);
+  const error = useSelector(selectOrdersError);
 
   useEffect(() => {
-    fetchOrders();
-  }, []);
+    dispatch(fetchOrders());
+  }, [dispatch]);
 
-  const fetchOrders = async () => {
-    try {
-      const response = await fetch(`${process.env.REACT_APP_API_URL}/order`);
-      const data = await response.json();
-      setOrders(data.rows);
-    } catch (error) {
-      console.error('Error fetching orders:', error);
-    }
+  const handleOrderClick = async (orderId) => {
+    await dispatch(fetchOrderById(orderId));
   };
 
-  const OrderDetail = ({ order, onClose }) => {
-    if (!order) return null;
+  const handleCloseDetail = () => {
+    dispatch(clearSelectedOrder());
+  };
 
+  if (status === 'loading') {
     return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-        <div className="bg-white p-6 rounded-lg w-full max-w-3xl max-h-[90vh] overflow-y-auto">
-          <h2 className="text-xl font-bold mb-4">รายละเอียดคำสั่งซื้อ</h2>
-          
-          <div className="mb-6">
-            <h3 className="font-semibold mb-2">ข้อมูลลูกค้า</h3>
-            <p>ชื่อ: {order.customerName}</p>
-            <p>เบอร์โทร: {order.phoneNumber}</p>
-            <p>ที่อยู่: {order.address}</p>
-          </div>
-
-          <h3 className="font-semibold mb-2">รายการสินค้า</h3>
-          <div className="bg-white rounded-lg shadow-md overflow-hidden mb-4">
-            <table className="w-full">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-4 py-2 text-left">สินค้า</th>
-                  <th className="px-4 py-2 text-right">ราคาต่อชิ้น</th>
-                  <th className="px-4 py-2 text-right">จำนวน</th>
-                  <th className="px-4 py-2 text-right">รวม</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200">
-                {order.products.map((item) => (
-                  <tr key={item.product._id}>
-                    <td className="px-4 py-2">{item.product.name}</td>
-                    <td className="px-4 py-2 text-right">
-                      ฿{item.product.price.toLocaleString()}
-                    </td>
-                    <td className="px-4 py-2 text-right">{item.quantity}</td>
-                    <td className="px-4 py-2 text-right">
-                      ฿{(item.product.price * item.quantity).toLocaleString()}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          <div className="flex justify-between items-center">
-            <div className="text-xl font-bold">
-              ยอดรวมทั้งสิ้น: ฿{order.totalAmount.toLocaleString()}
-            </div>
-            <button
-              onClick={onClose}
-              className="px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300"
-            >
-              ปิด
-            </button>
-          </div>
+      <div className="flex justify-center items-center min-h-screen">
+        <div className="flex items-center space-x-2">
+          <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
+          <span className="text-gray-600">กำลังโหลด...</span>
         </div>
       </div>
     );
-  };
+  }
+
+  if (error) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
+          {error}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -96,7 +69,7 @@ const OrderList = () => {
             {orders.map((order) => (
               <tr
                 key={order._id}
-                onClick={() => setSelectedOrder(order)}
+                onClick={() => handleOrderClick(order._id)}
                 className="cursor-pointer hover:bg-gray-50"
               >
                 <td className="px-6 py-4">
@@ -114,12 +87,7 @@ const OrderList = () => {
         </table>
       </div>
 
-      {selectedOrder && (
-        <OrderDetail
-          order={selectedOrder}
-          onClose={() => setSelectedOrder(null)}
-        />
-      )}
+      <OrderDetail onClose={handleCloseDetail} />
     </div>
   );
 };

@@ -1,31 +1,32 @@
-import React, { useState } from 'react';
-import { useForm, Controller } from 'react-hook-form';
+import React from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 import { UserPlus, Search, Loader2 } from 'lucide-react';
+import { createUser, selectUserStatus, selectUserError } from '../reduxs/slices/userSlice';
 
 function CreateOneUser() {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [isReady, setIsReady] = useState(true);
-  const { control, handleSubmit } = useForm();
+  const dispatch = useDispatch();
+  const status = useSelector(selectUserStatus);
+  const error = useSelector(selectUserError);
+  const [searchTerm, setSearchTerm] = React.useState('');
+  const [formData, setFormData] = React.useState({
+    name: '',
+    department: ''
+  });
 
-  const handleCreateUser = async (data) => {
-    try {
-      setIsReady(false);
-      await fetch(`${process.env.REACT_APP_API_URL}/user`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data),
-      });
-      await fetch(`${process.env.REACT_APP_API_URL}/user`);
-      setIsReady(true);
-    } catch (error) {
-      console.error('Error:', error?.message);
-      setIsReady(true);
-    }
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
   };
 
-  if (!isReady) {
+  const handleCreateUser = async (e) => {
+    e.preventDefault();
+    dispatch(createUser(formData));
+  };
+
+  if (status === 'loading') {
     return (
       <div className="fixed inset-0 bg-white bg-opacity-75 flex items-center justify-center">
         <div className="flex items-center space-x-2">
@@ -49,23 +50,25 @@ function CreateOneUser() {
             
             <div className="bg-white rounded-lg shadow-sm">
               <div className="p-6">
-                <form onSubmit={handleSubmit(handleCreateUser)} className="space-y-6">
+                {error && (
+                  <div className="mb-4 p-4 bg-red-50 text-red-600 rounded-md">
+                    {error}
+                  </div>
+                )}
+                
+                <form onSubmit={handleCreateUser} className="space-y-6">
                   <div className="space-y-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
                         ชื่อ
                       </label>
-                      <Controller
+                      <input
+                        type="text"
                         name="name"
-                        control={control}
-                        render={({ field }) => (
-                          <input
-                            {...field}
-                            type="text"
-                            placeholder="ชื่อพนักงาน"
-                            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
-                          />
-                        )}
+                        value={formData.name}
+                        onChange={handleInputChange}
+                        placeholder="ชื่อพนักงาน"
+                        className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
                       />
                     </div>
                     
@@ -73,17 +76,13 @@ function CreateOneUser() {
                       <label className="block text-sm font-medium text-gray-700 mb-1">
                         แผนก
                       </label>
-                      <Controller
+                      <input
+                        type="text"
                         name="department"
-                        control={control}
-                        render={({ field }) => (
-                          <input
-                            {...field}
-                            type="text"
-                            placeholder="แผนก"
-                            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
-                          />
-                        )}
+                        value={formData.department}
+                        onChange={handleInputChange}
+                        placeholder="แผนก"
+                        className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
                       />
                     </div>
                   </div>
@@ -91,7 +90,8 @@ function CreateOneUser() {
                   <div>
                     <button
                       type="submit"
-                      className="w-full sm:w-auto px-6 py-2 bg-blue-500 text-white font-medium rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition"
+                      disabled={status === 'loading'}
+                      className="w-full sm:w-auto px-6 py-2 bg-blue-500 text-white font-medium rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       บันทึก
                     </button>

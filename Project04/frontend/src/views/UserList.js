@@ -1,38 +1,31 @@
-import React, { useState, useEffect } from 'react';
-import { Search, Info, Trash2 } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { Search, Info, Trash2, Loader2 } from 'lucide-react';
+import { 
+  fetchAllUsers, 
+  deleteUser,
+  selectAllUsers, 
+  selectUserStatus, 
+  selectUserError 
+} from '../reduxs/slices/userSlice';
+import { useNavigate } from 'react-router-dom';
 
 const UserList = () => {
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
-  const [users, setUsers] = useState([]);
-  const [isReady, setIsReady] = useState(false);
-  const [error, setError] = useState('');
-
-  const getAllUsers = async () => {
-    setIsReady(false);
-    setError('');
-    try {
-      const response = await fetch(`${process.env.REACT_APP_API_URL}/user`);
-      const data = await response.json();
-      setUsers(data?.rows || []);
-      setIsReady(true);
-    } catch (error) {
-      setError(error?.message || 'Failed to fetch users');
-      setIsReady(true);
-    }
-  };
+  
+  const users = useSelector(selectAllUsers);
+  const status = useSelector(selectUserStatus);
+  const error = useSelector(selectUserError);
 
   useEffect(() => {
-    getAllUsers();
-  }, []);
+    dispatch(fetchAllUsers());
+  }, [dispatch]);
 
   const handleDeleteUser = async (userId) => {
-    try {
-      await fetch(`${process.env.REACT_APP_API_URL}/user/${userId}`, {
-        method: 'DELETE',
-      });
-      getAllUsers();
-    } catch (error) {
-      setError(error?.message || 'Failed to delete user');
+    if (window.confirm('คุณต้องการลบผู้ใช้งานนี้ใช่หรือไม่?')) {
+      dispatch(deleteUser(userId));
     }
   };
 
@@ -42,10 +35,13 @@ const UserList = () => {
       user?.department?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  if (!isReady) {
+  if (status === 'loading') {
     return (
       <div className="flex justify-center items-center min-h-screen">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+        <div className="flex items-center space-x-2">
+          <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
+          <span className="text-gray-600">กำลังโหลด...</span>
+        </div>
       </div>
     );
   }
@@ -104,7 +100,7 @@ const UserList = () => {
                         <td className="px-6 py-4 text-right">
                           <button
                             className="inline-flex items-center px-3 py-1 mr-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700"
-                            onClick={() => window.location.href = `/detail/${user?._id}`}
+                            onClick={() => navigate(`/detail/${user?._id}`)}
                           >
                             <Info className="h-4 w-4 mr-1" />
                             รายละเอียด
@@ -112,6 +108,7 @@ const UserList = () => {
                           <button
                             className="inline-flex items-center px-3 py-1 bg-red-600 text-white text-sm font-medium rounded-md hover:bg-red-700"
                             onClick={() => handleDeleteUser(user?._id)}
+                            disabled={status === 'loading'}
                           >
                             <Trash2 className="h-4 w-4 mr-1" />
                             ลบ
