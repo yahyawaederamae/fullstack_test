@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import ProductForm from '../Components/ProductForm';
-import { Plus, Search, Edit2, Trash2, ArrowUpDown, ShoppingCart } from 'lucide-react';
+import { Plus, Search, Edit2, Trash2, ArrowUpDown, ShoppingCart, ChevronLeft, ChevronRight } from 'lucide-react';
 
 const ProductList = () => {
   const [products, setProducts] = useState([]);
@@ -9,22 +9,44 @@ const ProductList = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState('name');
   const [sortOrder, setSortOrder] = useState('asc');
+  
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(8);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
 
-  useEffect(() => {
-    fetchProducts();
-  }, []);
-
-  const fetchProducts = async () => {
+  const fetchProducts = useCallback(async () => {
     try {
-      const response = await fetch(`${process.env.REACT_APP_API_URL}/product`);
+      const queryParams = new URLSearchParams({
+        page: currentPage,
+        size: pageSize,
+        search: searchTerm,
+      });
+
+      const response = await fetch(
+        `${process.env.REACT_APP_API_URL}/product?${queryParams}`
+      );
       const data = await response.json();
-      setProducts(data);
+      
+      setProducts(data.rows);
+      setTotalPages(data.pagination.totalPages);
+      setTotalItems(data.pagination.totalCount);
     } catch (error) {
       console.error('Error fetching products:', error);
     }
-  };
+  }, [currentPage, pageSize, searchTerm]);
 
-  const handleDelete = useCallback(async (productId) => {
+  useEffect(() => {
+    fetchProducts();
+  }, [fetchProducts]);
+
+  // Reset to first page when search term changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm]);
+
+  const handleDelete = async (productId) => {
     if (!window.confirm('คุณต้องการลบสินค้านี้ใช่หรือไม่?')) {
       return;
     }
@@ -36,22 +58,26 @@ const ProductList = () => {
 
       if (response.ok) {
         fetchProducts();
-        const notification = document.createElement('div');
-        notification.className = 'fixed top-4 right-4 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg transform transition-transform duration-300 ease-in-out';
-        notification.textContent = 'ลบสินค้าเรียบร้อยแล้ว';
-        document.body.appendChild(notification);
-        
-        setTimeout(() => {
-          notification.style.transform = 'translateX(150%)';
-          setTimeout(() => document.body.removeChild(notification), 300);
-        }, 2000);
+        showNotification('ลบสินค้าเรียบร้อยแล้ว', 'red');
       }
     } catch (error) {
       console.error('Error deleting product:', error);
     }
-  }, []);
+  };
 
-  const addToCart = useCallback((product) => {
+  const showNotification = (message, color = 'green') => {
+    const notification = document.createElement('div');
+    notification.className = `fixed top-4 right-4 bg-${color}-500 text-white px-6 py-3 rounded-lg shadow-lg transform transition-transform duration-300 ease-in-out`;
+    notification.textContent = message;
+    document.body.appendChild(notification);
+    
+    setTimeout(() => {
+      notification.style.transform = 'translateX(150%)';
+      setTimeout(() => document.body.removeChild(notification), 300);
+    }, 2000);
+  };
+
+  const addToCart = (product) => {
     const cart = JSON.parse(localStorage.getItem('cart') || '[]');
     const existingItem = cart.find(item => item.product._id === product._id);
     
@@ -62,34 +88,10 @@ const ProductList = () => {
     }
     
     localStorage.setItem('cart', JSON.stringify(cart));
-    
-    const notification = document.createElement('div');
-    notification.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg transform transition-transform duration-300 ease-in-out';
-    notification.textContent = 'เพิ่มสินค้าลงตะกร้าแล้ว';
-    document.body.appendChild(notification);
-    
-    setTimeout(() => {
-      notification.style.transform = 'translateX(150%)';
-      setTimeout(() => document.body.removeChild(notification), 300);
-    }, 2000);
-  }, []);
+    showNotification('เพิ่มสินค้าลงตะกร้าแล้ว');
+  };
 
-  const handleCreate = useCallback(() => {
-    setEditingProduct({
-      name: '',
-      description: '',
-      price: 0,
-      remain: 0
-    });
-    setShowForm(true);
-  }, []);
-
-  const handleEdit = useCallback((product) => {
-    setEditingProduct({ ...product });
-    setShowForm(true);
-  }, []);
-
-  const handleSave = useCallback(async () => {
+  const handleSave = async () => {
     try {
       if (!editingProduct.name || !editingProduct.description || editingProduct.price <= 0) {
         alert('กรุณากรอกข้อมูลให้ครบถ้วน');
@@ -114,32 +116,17 @@ const ProductList = () => {
         fetchProducts();
         setShowForm(false);
         setEditingProduct(null);
+        showNotification(editingProduct._id ? 'แก้ไขสินค้าเรียบร้อยแล้ว' : 'เพิ่มสินค้าเรียบร้อยแล้ว');
       }
     } catch (error) {
       console.error('Error saving product:', error);
     }
-  }, [editingProduct]);
-
-  const filteredProducts = products
-    .filter(product => 
-      product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      product.description.toLowerCase().includes(searchTerm.toLowerCase())
-    )
-    .sort((a, b) => {
-      const order = sortOrder === 'asc' ? 1 : -1;
-      if (sortBy === 'name') {
-        return order * a.name.localeCompare(b.name);
-      }
-      if (sortBy === 'price') {
-        return order * (a.price - b.price);
-      }
-      return order * (a.remain - b.remain);
-    });
+  };
 
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
-        <h1 className="text-3xl font-bold text-gray-800">สินค้าทั้งหมด</h1>
+        <h1 className="text-3xl font-bold text-gray-800">สินค้าทั้งหมด ({totalItems} รายการ)</h1>
         <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto">
           <div className="relative flex-grow sm:max-w-md">
             <input
@@ -152,7 +139,15 @@ const ProductList = () => {
             <Search className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
           </div>
           <button
-            onClick={handleCreate}
+            onClick={() => {
+              setEditingProduct({
+                name: '',
+                description: '',
+                price: 0,
+                remain: 0
+              });
+              setShowForm(true);
+            }}
             className="bg-blue-600 hover:bg-blue-700 text-white py-2 px-6 rounded-lg transition duration-200 flex items-center justify-center gap-2"
           >
             <Plus size={20} />
@@ -161,26 +156,25 @@ const ProductList = () => {
         </div>
       </div>
 
-      <div className="mb-6 flex flex-wrap gap-4">
+      {/* Pagination Size Selector */}
+      <div className="mb-6 flex flex-wrap items-center gap-4">
         <select
-          value={sortBy}
-          onChange={(e) => setSortBy(e.target.value)}
+          value={pageSize}
+          onChange={(e) => {
+            setPageSize(Number(e.target.value));
+            setCurrentPage(1);
+          }}
           className="px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
         >
-          <option value="name">เรียงตามชื่อ</option>
-          <option value="price">เรียงตามราคา</option>
-          <option value="remain">เรียงตามจำนวน</option>
+          <option value={8}>แสดง 8 รายการ</option>
+          <option value={16}>แสดง 16 รายการ</option>
+          <option value={24}>แสดง 24 รายการ</option>
+          <option value={32}>แสดง 32 รายการ</option>
         </select>
-        <button
-          onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
-          className="px-4 py-2 border rounded-lg hover:bg-gray-50 transition duration-200"
-        >
-          <ArrowUpDown size={20} className={`transform ${sortOrder === 'desc' ? 'rotate-180' : ''}`} />
-        </button>
       </div>
       
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-        {filteredProducts.map((product) => (
+        {products.map((product) => (
           <div
             key={product._id}
             className="bg-white rounded-lg shadow-lg overflow-hidden transform transition duration-200 hover:shadow-xl hover:-translate-y-1"
@@ -192,7 +186,10 @@ const ProductList = () => {
                 </h2>
                 <div className="flex gap-2">
                   <button
-                    onClick={() => handleEdit(product)}
+                    onClick={() => {
+                      setEditingProduct({ ...product });
+                      setShowForm(true);
+                    }}
                     className="text-gray-400 hover:text-blue-600 transition duration-200"
                     title="แก้ไขสินค้า"
                   >
@@ -240,6 +237,29 @@ const ProductList = () => {
           </div>
         ))}
       </div>
+
+      {/* Pagination Controls */}
+      {totalPages > 1 && (
+        <div className="mt-8 flex justify-center items-center gap-4">
+          <button
+            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+            disabled={currentPage === 1}
+            className="p-2 rounded-lg border enabled:hover:bg-gray-100 disabled:opacity-50"
+          >
+            <ChevronLeft size={20} />
+          </button>
+          <span className="text-gray-600">
+            หน้า {currentPage} จาก {totalPages}
+          </span>
+          <button
+            onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+            disabled={currentPage === totalPages}
+            className="p-2 rounded-lg border enabled:hover:bg-gray-100 disabled:opacity-50"
+          >
+            <ChevronRight size={20} />
+          </button>
+        </div>
+      )}
 
       {showForm && (
         <ProductForm
