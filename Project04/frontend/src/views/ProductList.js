@@ -18,7 +18,7 @@ const ProductList = () => {
   // Redux states
   const products = useSelector(selectAllProducts) || [];
   const status = useSelector(selectProductsStatus);
-  const { totalItems = 0, currentPage = 1, totalPages = 1 } = useSelector(selectPagination) || {};
+  const { totalCount = 0, currentPage = 1, totalPages = 1 } = useSelector(selectPagination) || {};
 
   // Local states
   const [showForm, setShowForm] = useState(false);
@@ -117,7 +117,7 @@ const ProductList = () => {
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
-        <h1 className="text-3xl font-bold text-gray-800">สินค้าทั้งหมด ({totalItems || 0} รายการ)</h1>
+        <h1 className="text-3xl font-bold text-gray-800">สินค้าทั้งหมด ({totalCount || 0} รายการ)</h1>
         <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto">
           <div className="relative flex-grow sm:max-w-md">
             <input
