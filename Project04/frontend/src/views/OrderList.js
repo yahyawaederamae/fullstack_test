@@ -12,7 +12,7 @@ const OrderList = () => {
     try {
       const response = await fetch(`${process.env.REACT_APP_API_URL}/order`);
       const data = await response.json();
-      setOrders(data);
+      setOrders(data.rows);
     } catch (error) {
       console.error('Error fetching orders:', error);
     }
